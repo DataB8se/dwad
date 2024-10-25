@@ -1,13 +1,15 @@
 {
   "name": "unique-visitor-counter",
   "version": "1.0.0",
-  "description": "A simple visitor counter",
+  "description": "A simple Node.js server to track unique visitor count using cookies and JSON storage.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+  "author": "Your Name",
+  "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "cookie-parser": "^1.4.6"
   }
 }
