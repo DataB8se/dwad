@@ -1,36 +1,48 @@
 const express = require("express");
-const cors = require("cors");
+const fs = require("fs");
 const cookieParser = require("cookie-parser");
+
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// In-memory storage for simplicity (reset on server restart)
-const visitors = new Set();
-
-app.use(cors());
 app.use(cookieParser());
-app.use(express.json());
 
-// Route for tracking unique visitors
-app.post("/api/visit", (req, res) => {
+// File to store visitor count data
+const countFile = "visitorCount.json";
+
+// Initialize visitor count if file doesn't exist
+if (!fs.existsSync(countFile)) {
+    fs.writeFileSync(countFile, JSON.stringify({ uniqueVisits: 0 }));
+}
+
+// Helper function to get the unique visitor count
+const getVisitorCount = () => {
+    const data = fs.readFileSync(countFile);
+    return JSON.parse(data).uniqueVisits;
+};
+
+// Endpoint to get the unique visitor count
+app.get("/count", (req, res) => {
+    res.json({ uniqueVisits: getVisitorCount() });
+});
+
+// Endpoint to track visits
+app.get("/visit", (req, res) => {
     const visitorId = req.cookies.visitorId;
 
-    // If visitorId doesn't exist, create it and add to visitor count
     if (!visitorId) {
-        const newVisitorId = Math.random().toString(36).substring(2);
-        visitors.add(newVisitorId);
+        const uniqueVisitorId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+        res.cookie("visitorId", uniqueVisitorId, { maxAge: 365 * 24 * 60 * 60 * 1000 }); // 1 year
 
-        // Set the cookie to identify the visitor on future visits
-        res.cookie("visitorId", newVisitorId, { maxAge: 365 * 24 * 60 * 60 * 1000 });
-        res.json({ totalUniqueVisitors: visitors.size });
-    } else {
-        // Visitor already counted, just return the current count
-        res.json({ totalUniqueVisitors: visitors.size });
+        let data = JSON.parse(fs.readFileSync(countFile));
+        data.uniqueVisits += 1;
+        fs.writeFileSync(countFile, JSON.stringify(data));
     }
+
+    res.redirect("/");
 });
 
-app.get("/api/visit", (req, res) => {
-    res.json({ totalUniqueVisitors: visitors.size });
-});
+app.use(express.static("public")); // Serve static files from "public" folder
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const PORT = 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});
